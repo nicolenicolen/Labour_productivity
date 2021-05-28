@@ -8,6 +8,8 @@ import os
 import psutil
 import os,sys,glob
 import pandas as pd
+from numpy import median
+import statistics
 
 #os.chdir('/p/tmp/vmaanen/')
 
@@ -18,6 +20,8 @@ for Impact_file in all_files:
 	Impact = xr.open_dataset(Impact_file)
 
 	Impact = Impact['Impact']
+
+	#Impact = np.nanpercentile(Impact.values[mask.values != 0], 33)
 
 	country_mask = xr.open_dataset('/p/tmp/vmaanen/Data/mask_countries_lat-weighted_720x360.nc')
 
@@ -30,10 +34,20 @@ for Impact_file in all_files:
 
 		mask = country_mask[country_name]
 
-		#output.loc[(output.country == country_name), 'impact'] = np.nansum(((Impact*0.33) * mask), axis=(0,1))
-		#output.loc[(output.country == country_name), 'impact'] = np.nansum(((Impact*0.66) * mask), axis=(0,1))
-		output.loc[(output.country == country_name), 'impact'] = np.nansum(((np.median(Impact)) * mask), axis=(0,1))
+		# save upper 66%, median and lower 33% of Impact
 
-	#output.to_csv('/p/tmp/vmaanen/new/NAVIGATE/indoor/annual_projections/relative/country_level/low/'+Impact_file.split('/')[-1].replace('Impact','Impact_low').replace('.nc4','.csv'))
+		#output.loc[(output.country == country_name), 'impact'] = np.nansum((np.nanpercentile(Impact, q=33) * mask), axis=(0,1))
+
+		# oder:
+
+		#output.loc[(output.country == country_name), 'impact'] = np.nansum((Impact.quantile(q=0.33)) * mask, axis=(0,1))
+		#output.loc[(output.country == country_name), 'impact'] = np.nansum(((Impact*0.66) * mask), axis=(0,1))
+		# output.loc[(output.country == country_name), 'impact'] = np.nansum(Impact * mask, axis=(0,1))
+		output.loc[(output.country == country_name), 'impact'] = np.nanpercentile(Impact.values[mask.values != 0], 66)
+		#output.loc[(output.country == country_name), 'impact'] = np.nansum(Impact * mask, axis=(0,1))
+		# so vielleicht?
+		# ich probiers mal, danke!!
+
+	output.to_csv('/p/tmp/vmaanen/new/NAVIGATE/indoor/annual_projections/relative/country_level/low/'+Impact_file.split('/')[-1].replace('Impact','Impact_low').replace('.nc4','.csv'))
 	#output.to_csv('/p/tmp/vmaanen/new/NAVIGATE/indoor/annual_projections/relative/country_level/high/'+Impact_file.split('/')[-1].replace('Impact','Impact_high').replace('.nc4','.csv'))
-	output.to_csv('/p/tmp/vmaanen/new/NAVIGATE/indoor/annual_projections/relative/country_level/medium/'+Impact_file.split('/')[-1].replace('Impact','Impact_medium').replace('.nc4','.csv'))
+	#output.to_csv('/p/tmp/vmaanen/new/NAVIGATE/indoor/annual_projections/relative/country_level/medium/'+Impact_file.split('/')[-1].replace('Impact','Impact_medium').replace('.nc4','.csv'))
